@@ -37,10 +37,12 @@ document.forms.fontSizeForm.fontSize.forEach(element => {
 
 class UserPrefsStore extends Store {
   getInitialState() {
-    return {
-      userName: 'Romain',
-      fontSize: 'small'
-    };
+    return localStorage[`preferences`]
+      ? JSON.parse(localStorage[`preferences`])
+      : {
+          userName: 'Romain',
+          fontSize: 'small'
+        };
   }
   __onDispatch(action) {
     switch (action.type) {
@@ -50,7 +52,7 @@ class UserPrefsStore extends Store {
         break;
       case UPDATE_FONT_SIZE_PREFERENCE:
         this.__state.fontSize = action.value;
-        this.__emitChange;
+        this.__emitChange();
         break;
     }
     this.__emitChange();
@@ -65,6 +67,7 @@ const userPrefsStore = new UserPrefsStore(controlPanelDispatcher);
 userPrefsStore.addListener(state => {
   console.info(`The current state is...`, state);
   render(state);
+  localStorage['preferences'] = JSON.stringify(state);
 });
 
 const render = ({ userName, fontSize }) => {
@@ -73,6 +76,4 @@ const render = ({ userName, fontSize }) => {
     fontSize === 'small' ? '16px' : '24px';
 };
 
-controlPanelDispatcher.register(action => {
-  console.info('Received action...', action);
-});
+render(userPrefsStore.getUserPreferences());
