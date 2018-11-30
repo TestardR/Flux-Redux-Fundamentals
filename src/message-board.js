@@ -11,6 +11,10 @@ export const UPDATE_STATUS = 'UPDATE_STATUS';
 
 export const CREATE_NEW_MESSAGE = 'CREATE_NEW_MESSAGE';
 
+export const READY = 'READY';
+export const WAITING = 'WAITING';
+export const NEW_MESSAGE_SERVER_ACCEPTED = 'NEW_MESSAGE_SERVER_ACCEPTED';
+
 const defaultState = {
   messages: [
     {
@@ -24,7 +28,8 @@ const defaultState = {
       content: 'Anyone got tickets to ng-conf?'
     }
   ],
-  userStatus: ONLINE
+  userStatus: ONLINE,
+  apiCommunicationStatus: READY
 };
 
 const userStatusReducer = (
@@ -35,6 +40,16 @@ const userStatusReducer = (
     case UPDATE_STATUS:
       return value;
       break;
+  }
+  return state;
+};
+
+const apiCommunicationStatusReducer = (state = READY, { type }) => {
+  switch (type) {
+    case CREATE_NEW_MESSAGE:
+      return WAITING;
+    case NEW_MESSAGE_SERVER_ACCEPTED:
+      return READY;
   }
   return state;
 };
@@ -53,7 +68,8 @@ const messagesReducer = (
 
 const combinedReducer = combineReducers({
   userStatus: userStatusReducer,
-  messages: messagesReducer
+  messages: messagesReducer,
+  apiCommunicationStatus: apiCommunicationStatusReducer
 });
 
 const store = createStore(combinedReducer, applyMiddleware(logger()));
@@ -68,7 +84,7 @@ document.forms.newMessage.addEventListener('submit', e => {
 });
 
 const render = () => {
-  const { messages, userStatus } = store.getState();
+  const { messages, userStatus, apiCommunicationStatus } = store.getState();
   document.getElementById('messages').innerHTML = messages
     .sort((a, b) => b.date - a.date)
     .map(
@@ -80,7 +96,8 @@ const render = () => {
     )
     .join('');
 
-  document.forms.newMessage.fields.disabled = userStatus === OFFLINE;
+  document.forms.newMessage.fields.disabled =
+    userStatus === OFFLINE || apiCommunicationStatus === WAITING;
   document.forms.newMessage.newMessage.value = '';
 };
 
@@ -93,6 +110,11 @@ const statusUpdateAction = value => {
 
 const newMessageAction = (content, postedBy) => {
   const date = new Date();
+  get('/api/create', id => {
+    store.dispatch({
+      type: NEW_MESSAGE_SERVER_ACCEPTED
+    });
+  });
   return {
     type: CREATE_NEW_MESSAGE,
     value: content,
