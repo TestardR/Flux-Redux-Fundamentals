@@ -37,7 +37,33 @@ const userStatusReducer = (
   return state;
 };
 
-const store = createStore(reducer);
+const messagesReducer = (
+  state = defaultState.messages,
+  { type, value, postedBy, date }
+) => {
+  switch (type) {
+    case CREATE_NEW_MESSAGE:
+      const newState = [{ date, postedBy, content: value }, ...state];
+      return newState;
+  }
+  return state;
+};
+
+const combinedReducer = combineReducers({
+  userStatus: userStatusReducer,
+  messages: messagesReducer
+});
+
+const store = createStore(combinedReducer);
+
+document.forms.newMessage.addEventListener('submit', e => {
+  e.preventDefault();
+  const value = e.target.newMessage.value;
+  const username = localStorage['preferences']
+    ? JSON.parse(localStorage['preferences']).userName
+    : 'Jim';
+  store.dispatch(newMessageAction(value, username));
+});
 
 const render = () => {
   const { messages, userStatus } = store.getState();
@@ -53,6 +79,7 @@ const render = () => {
     .join('');
 
   document.forms.newMessage.fields.disabled = userStatus === OFFLINE;
+  document.forms.newMessage.newMessage.value = '';
 };
 
 const statusUpdateAction = value => {
