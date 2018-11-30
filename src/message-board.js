@@ -1,4 +1,13 @@
-import { createStore } from 'redux';
+import { createStore, combineReducers } from 'redux';
+
+export const ONLINE = 'ONLINE';
+export const AWAY = 'AWAY';
+export const BUSY = 'BUSY';
+export const OFFLINE = 'OFFLINE';
+
+export const UPDATE_STATUS = 'UPDATE_STATUS';
+
+export const CREATE_NEW_MESSAGE = 'CREATE_NEW_MESSAGE';
 
 const defaultState = {
   messages: [
@@ -13,15 +22,25 @@ const defaultState = {
       content: 'Anyone got tickets to ng-conf?'
     }
   ],
-  usersStatus: 'ONLINE'
+  userStatus: ONLINE
 };
 
-const store = createStore((state = defaultState) => {
+const userStatusReducer = (
+  state = defaultState.userStatus,
+  { type, value }
+) => {
+  switch (type) {
+    case UPDATE_STATUS:
+      return value;
+      break;
+  }
   return state;
-});
+};
+
+const store = createStore(reducer);
 
 const render = () => {
-  const { messages, usersStatus } = store.getState();
+  const { messages, userStatus } = store.getState();
   document.getElementById('messages').innerHTML = messages
     .sort((a, b) => b.date - a.date)
     .map(
@@ -32,6 +51,31 @@ const render = () => {
         `
     )
     .join('');
+
+  document.forms.newMessage.fields.disabled = userStatus === OFFLINE;
 };
 
+const statusUpdateAction = value => {
+  return {
+    type: UPDATE_STATUS,
+    value
+  };
+};
+
+const newMessageAction = (content, postedBy) => {
+  const date = new Date();
+  return {
+    type: CREATE_NEW_MESSAGE,
+    value: content,
+    postedBy,
+    date
+  };
+};
+
+document.forms.selectStatus.status.addEventListener('change', e => {
+  store.dispatch(statusUpdateAction(e.target.value));
+});
+
 render();
+
+store.subscribe(render);
